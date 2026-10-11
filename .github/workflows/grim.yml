@@ -28,7 +28,7 @@ jobs:
       fail-fast: false
       # 8 parallel runners — each is an independent Azure IP
       matrix:
-        slot: [1, 2, 3, 4, 5, 6, 7, 8]
+        slot: [1, 2]
     steps:
       - uses: actions/checkout@v4
 
